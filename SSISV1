@@ -1,0 +1,400 @@
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+
+app = Tk()
+SSIS = Label(app, text="Simple Student Information System", width=80, border=4,relief="groove", bg="maroon", fg="white", font=("arial",12, "bold", "italic"))
+SSIS.pack()
+frame = Canvas(app, width=2000, height=2000,background="#C7C6C1")
+frame.pack()
+
+rect1 = frame.create_rectangle(790,21,10,160,fill="beige")
+rect2 = frame.create_rectangle(790,390,10,200,fill="beige")
+rect3 = frame.create_rectangle(790,673,10,427,fill="beige")
+
+def add():
+    f_name = Fname.get().capitalize()
+    m_name = Mname.get().capitalize()[0] if Mname.get() else ""
+    s_name = Sname.get().capitalize()
+    s_course = courses.get()
+    s_year = year_opt.get()
+    id_get = id.get()
+
+    with open("students.txt", "r") as f:
+        for line in f:
+            if id_get in line:
+                messagebox.showerror("Warning!", "ID already exists")
+                return
+
+    if s_name != "Surname" and s_name != "" and f_name != "First Name" and f_name != "" and id_get != "Student ID (2000-xxxx)" and id_get != "":
+        confirm = messagebox.askokcancel("Adding", f"Confirm adding {id_get} {s_name}, {f_name} {m_name}.?")
+        if confirm:
+            if m_name:
+                full = f"{s_name} {f_name} {m_name}."
+                mid_init = m_name[0]+"."
+            else:
+                full = f"{s_name} {f_name}"
+                mid_init = ""
+            lineform = f"{id_get}, {full},{s_year},{s_course}\n"
+            with open("students.txt", "a") as f:
+                f.write(lineform)
+            if m_name:
+                mid_init = m_name[0]+"."
+                full = f"{s_name} {f_name} {mid_init}."
+            else:
+                full = f"{s_name} {f_name}"
+            boxlist1.insert(END, id_get)
+            boxlist2.insert(END, full)
+            boxlist3.insert(END, s_year)
+            boxlist4.insert(END, s_course)
+            Fname.delete(0, END)
+            Mname.delete(0, END)
+            Sname.delete(0, END)
+            id.delete(0, END)
+    else:
+        messagebox.showerror("Error!", "Fill all the fields.")
+        return
+
+def studentlist():
+    update_student()
+    boxlist1.delete(0, END)
+    boxlist2.delete(0, END)
+    boxlist3.delete(0, END)
+    boxlist4.delete(0, END)
+
+    with open("students.txt", "r") as f:
+        students = []
+        for line in f:
+            ID, sname, YEAR, COURSE = line.strip().split(",")
+            surname, firstname = sname.rsplit(' ', 1)
+            midinit = firstname.split()[-1]if len(firstname.split())>1 else""
+            firstname = firstname.replace(midinit, "").strip()
+            student = {
+                "id": ID.strip(),
+                "surname": surname.strip(),
+                "firstname": firstname.strip(),
+                "middleinit": midinit.strip(),
+                "year": YEAR.strip(),
+                "course": COURSE.strip()
+            }
+            students.append(student)
+    for student in students:
+        boxlist1.insert(END, student["id"])
+        full_name = f"{student['surname']} {student['firstname']} {student['middleinit']}"
+        boxlist2.insert(END, full_name)
+        boxlist3.insert(END, student["year"])
+        boxlist4.insert(END, student["course"])
+
+    
+
+def update_student():
+    boxlist1.delete(0, END)
+    boxlist2.delete(0, END)
+    boxlist3.delete(0, END)
+    boxlist4.delete(0, END)
+
+    with open("students.txt", "r") as f:
+        course_student = f.readlines()
+
+    for line in course_student:
+        boxlist1.insert(END, line.strip())
+        boxlist2.insert(END, line.strip())
+        boxlist3.insert(END, line.strip())
+        boxlist4.insert(END, line.strip())
+        boxlist1.bind("<ButtonRelease-1>", on_select)
+        
+        
+def on_select(event):
+    select = boxlist1.curselection()
+    if select:
+        deleteID.config(state='normal')
+    else:
+        deleteID.config(state='disabled')
+
+def scroll(event):
+    for box in[boxlist1, boxlist2, boxlist3, boxlist4]:
+        box.yview_scroll(int(-1 * (event.delta/120)), "units")
+
+
+
+def addcourse():
+    course_window = Toplevel()
+    course_window.title("Adding Course")
+    course_window.geometry("400x50")
+    course_window.geometry("+{}+{}".format(xcoor+200,ycoor+300))
+    course_window.resizable(False,False)
+
+    input_val = StringVar()
+    entry = Entry(course_window, width= 60, textvariable= input_val)
+    entry.pack()
+
+    cancel = Button(course_window, text= "CANCEL", command= course_window.destroy)
+    cancel.pack(side=RIGHT)
+    ok = Button(course_window, text= "OK", command= lambda: confirmed(entry.get(), course_window))
+    ok.pack(side=RIGHT)
+    def confirmed(value, window):
+        
+        text = input_val.get()
+
+        if not text:
+            messagebox.showerror("Error!", "No course name inserted.")
+            return
+        
+        with open("course.txt", "r") as f:
+            textfile = f.read()
+        if text in textfile:
+            error = Label(course_window, fg= "red")
+            error.config(text = "Course already exists!")
+            error.pack()
+            return
+        
+        with open("course.txt", "a") as f:
+            f.write(value+"\n")
+        course_window.destroy()
+
+def courselist():
+    update_course()
+    update_dropdown()
+    with open("course.txt", "r") as f:
+        courselists = f.readlines()
+
+    listcourse = [s_course.strip() for s_course in courselists]
+    coursebox.delete(0, END)
+    for s_course in listcourse:
+        coursebox.insert(END, s_course)
+
+def update_dropdown():
+        options = get_options()
+        coursebox.configure(values=options)
+        coursebox.current(0)
+def get_options():
+    with open("course.txt", "r") as f:
+        lines = f.readlines()
+        options = [line.strip() for line in lines]
+    return options
+
+def update_course():
+    coursebox.delete(0, END)
+
+    with open("course.txt", "r") as f:
+        course_student = f.readlines()
+
+    for line in course_student:
+        coursebox.insert(END, line.strip())
+        coursebox.bind("<ButtonRelease-1>", on_select2)      
+        
+def on_select2(event):
+    select = coursebox.curselection()
+    if select:
+        deleteCOURSE.config(state='normal')
+    else:
+        deleteCOURSE.config(state='disabled')
+
+def update_dropdown():
+        options = get_options()
+        courses.configure(values=options)
+        courses.current(0)
+def get_options():
+    with open("course.txt", "r") as f:
+        lines = f.readlines()
+        options = [line.strip() for line in lines]
+    return options
+def delete1():
+        student = boxlist1.get(ACTIVE)
+        select = boxlist1.curselection()
+        name = boxlist2.get(select)
+        del_conf = messagebox.askyesno("Delete", f"Remove {student}, {name}?")
+
+        if del_conf:
+            with open("students.txt", "r") as f:
+                lines = f.readlines()
+            with open("students.txt", "w") as f:
+                for line in lines:
+                    if student not in line:
+                        f.write(line)
+            
+            boxlist1.delete(select)
+            boxlist2.delete(select)
+            boxlist3.delete(select)
+            boxlist4.delete(select)
+            boxlist1.select_clear(0, END)
+
+def delete2():
+    course_student = coursebox.get(ACTIVE)
+    del_conf = messagebox.askyesno("Delete", f"Remove {course_student}?")
+
+    if del_conf:
+        with open("course.txt", "r") as f:
+            lines = [line for line in f.readlines() if line.strip() != course_student]
+        with open("course.txt", "w") as f:
+            f.writelines(lines)
+        coursebox.delete(ACTIVE)
+
+def idsearch():
+    id = text.get().strip()
+
+    try:
+        idx = boxlist1.get(0, "end").index(id)
+    except ValueError:
+        messagebox.showerror("Not found", "Id not found")
+        return
+    boxlist1.selection_clear(0, END)
+    boxlist1.selection_set(idx)
+    boxlist1.activate(idx)
+    boxlist1.see(idx)
+    boxlist2.see(idx)
+    boxlist3.see(idx)
+    boxlist4.see(idx)
+    
+
+
+student = Button(app, text="Add Student",font=("arial",10,"italic","bold"),fg ="white",bg="maroon",width=13,command= add)
+course = Button(app, text="Add Course",font=("arial",10,"italic","bold"),fg ="white",bg="maroon",width=13,command=addcourse)
+list_stud = Button(app, text="List of Students",font=("arial",10,"italic","bold"),fg ="white",bg="maroon",width=13,command= studentlist)
+list_course = Button(app, text="List of Courses",font=("arial",10,"italic","bold"),fg ="white",bg="maroon",width=13,command= courselist)
+deleteID = Button(app, text="Delete by ID",font=("arial",10,"italic","bold"),fg ="white",bg="maroon",width=10, state= "disabled", command=delete1)
+deleteCOURSE = Button(app, text="Delete COURSE",font=("arial",10,"italic","bold"),fg ="white",bg="maroon",width=13, state= "disabled",command= delete2)
+search = Button(app, text="Search",font=("arial",10,"italic","bold"),fg ="white",bg="maroon",width=8, command= idsearch)
+        
+entry_text = StringVar()
+text = Entry(app,textvariable= entry_text,width=30,borderwidth=3,relief="groove",font=("arial",10,"italic","bold"))
+hold_text = "Student ID"
+entry_text.set(hold_text)
+text.config(fg="gray")
+def entry_click(event):
+    if entry_text.get() == hold_text:
+        text.delete(0, "end")
+        text.config(fg="black")
+def entry_unclick(event):
+    if not entry_text.get():
+        entry_text.set(hold_text)
+        text.config(fg="gray")
+text.bind("<FocusIn>", entry_click)
+text.bind("<FocusOut>", entry_unclick)
+
+Fname_text = StringVar()
+Fname = Entry(app,textvariable= Fname_text,width=40,borderwidth=3,relief="groove",font=("arial",10,"italic","bold"))
+hold_Fname = "First Name"
+Fname_text.set(hold_Fname)
+Fname.config(fg="gray")
+def Fname_click(event):
+    if Fname_text.get() == hold_Fname:
+        Fname.delete(0, "end")
+        Fname.config(fg="black")
+def Fname_unclick(event):
+    if not Fname_text.get():
+        Fname_text.set(hold_Fname)
+        Fname.config(fg="gray")
+Fname.bind("<FocusIn>", Fname_click)
+Fname.bind("<FocusOut>", Fname_unclick)
+
+Mname_text = StringVar()
+Mname = Entry(app,textvariable= Mname_text,width=40,borderwidth=3,relief="groove",font=("arial",10,"italic","bold"))
+hold_Mname = "Middle Name"
+Mname_text.set(hold_Mname)
+Mname.config(fg="gray")
+def Mname_click(event):
+    if Mname_text.get() == hold_Mname:
+        Mname.delete(0, "end")
+        Mname.config(fg="black")
+def Mname_unclick(event):
+    if not Mname_text.get():
+        Mname_text.set(hold_Mname)
+        Mname.config(fg="gray")
+Mname.bind("<FocusIn>", Mname_click)
+Mname.bind("<FocusOut>", Mname_unclick)
+
+Sname_text = StringVar()
+Sname = Entry(app,textvariable= Sname_text,width=40,borderwidth=3,relief="groove",font=("arial",10,"italic","bold"))
+hold_Sname = "Surname"
+Sname_text.set(hold_Sname)
+Sname.config(fg="gray")
+def Sname_click(event):
+    if Sname_text.get() == hold_Sname:
+        Sname.delete(0, "end")
+        Sname.config(fg="black")
+def Sname_unclick(event):
+    if not Sname_text.get():
+        Sname_text.set(hold_Sname)
+        Sname.config(fg="gray")
+Sname.bind("<FocusIn>", Sname_click)
+Sname.bind("<FocusOut>", Sname_unclick)
+
+id_text = StringVar()
+id = Entry(app,textvariable= id_text,width=30,borderwidth=3,relief="groove",font=("arial",10,"italic","bold"))
+hold_id = "Student ID (2000-xxxx)"
+id_text.set(hold_id)
+id.config(fg="gray")
+def id_click(event):
+    if id_text.get() == hold_id:
+        id.delete(0, "end")
+        id.config(fg="black")
+def id_unclick(event):
+    if not id_text.get():
+        id_text.set(hold_id)
+        id.config(fg="gray")
+id.bind("<FocusIn>", id_click)
+id.bind("<FocusOut>", id_unclick)
+
+with open("course.txt", "r") as f:
+    options = [line.strip() for line in f.readlines()]
+
+courses = ttk.Combobox(app, values=options, width=50, state= "readonly", font=("bell",10))
+courses.current(0)
+courses.place(x=320, y=85)
+
+year = ["1st Year", "2nd Year", "3rd Year", "4th Year", "other"]
+year_opt = ttk.Combobox(app, values=year, width=50, state= "readonly", font=("bell",10))
+year_opt.current(0)
+year_opt.place(x=320, y=115)
+
+boxlist1 = Listbox(app, font=("Helvetica",12, "underline"),height=9,borderwidth=4,width=11)
+boxlist2 = Listbox(app, font=("Helvetica",12, "underline"),height=9,borderwidth=4,width=30)
+boxlist3 = Listbox(app, font=("Helvetica",12, "underline"),height=9,borderwidth=4,width=10)
+boxlist4 = Listbox(app, font=("Helvetica",12, "underline"),height=9,borderwidth=4,width=31)
+coursebox = Listbox(app, font=("Helvetica",12, "underline", "bold"),height=11,borderwidth=4,width=85)
+boxlist1.bind("<<ListboxSelect>>", on_select)
+boxlist1.bind("<B1-Motion>", on_select)
+boxlist1.bind("<<MouseWheel>>", scroll)
+for box in [boxlist1,boxlist2,boxlist3,boxlist4]:
+    box.bind("<MouseWheel>", scroll)
+
+head1 = Label(app, text="ID", font=("times",10,"bold"),width=10,borderwidth=4,relief="groove",bg="beige")
+head2 = Label(app, text="Name", font=("times",10,"bold"),width=10,borderwidth=4,relief="groove",bg="beige")
+head3 = Label(app, text="Year", font=("times",10,"bold"),width=10,borderwidth=4,relief="groove",bg="beige")
+head4 = Label(app, text="Course", font=("times",10,"bold"),width=10,borderwidth=4,relief="groove",bg="beige")
+head5 = Label(app, text="Course Available", font=("times",10,"bold"),width=40,borderwidth=4,relief="groove",bg="beige")
+
+student.place(x=10,y=50)
+course.place(x=126,y=50)
+list_stud.place(x=242,y=50)
+list_course.place(x=358,y=50)
+search.place(x=717,y=50)
+deleteID.place(x=701,y=200)
+deleteCOURSE.place(x=677,y=427)
+text.place(x=500,y=50,height=30)
+Fname.place(x=20,y=85)
+Mname.place(x=20,y=115)
+Sname.place(x=20,y=145)
+id.place(x=320,y=145)
+boxlist1.place(x=11,y=234)
+boxlist2.place(x=120,y=234)
+boxlist3.place(x=400,y=234)
+boxlist4.place(x=500,y=234)
+coursebox.place(x=12,y=462)
+head1.place(x=11,y=205)
+head2.place(x=120,y=205)
+head3.place(x=400,y=205)
+head4.place(x=500,y=205)
+head5.place(x=12,y=431)
+
+
+width = app.winfo_screenwidth()
+height = app.winfo_screenheight()
+xcoor = int((width/2)- (800/2))
+ycoor = int((height/2)- (720/2))
+app.title("SSIS")
+app.geometry("800x720")
+app.geometry("+{}+{}".format(xcoor,ycoor))
+app.resizable(False,False)
+app.mainloop()
