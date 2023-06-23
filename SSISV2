@@ -26,56 +26,32 @@ SSIS.pack(pady=33)
 frame = CTkFrame(app, width=1440,height=900,fg_color="#177e81", bg_color="#323031", corner_radius=20, border_width=5,border_color="white")
 next_frame = CTkFrame(app, width=1440,height=900,fg_color="#177e81", bg_color="#323031", corner_radius=20, border_width=5,border_color="white")
 frame.place(x=0,y=100)
-frame1 = CTkFrame(frame, width=700,height=400,fg_color="#03254c", bg_color="#177e81", corner_radius=20)
-frame1.place(x=10,y=15)
+frame1 = CTkFrame(frame, width=700,height=550,fg_color="#03254c", bg_color="#177e81", corner_radius=20)
+frame1.place(x=10,y=80)
 frame2 = CTkFrame(frame, width=700,height=400,fg_color="#03254c", bg_color="#177e81", corner_radius=20)
-frame2.place(x=10,y=480)
+frame2.place(x=728,y=80)
 
-#search frame
-srcframe = CTkFrame(frame,width=650,height=400,fg_color="#03254c", bg_color="#177e81", corner_radius=20)
-srcframe.place(x=775, y=15)
-
-def srcrecords():
-    rcrd = srcentry.get()
-    conn = sqlite3.connect('data.db')
-    curr = conn.cursor()
-
-    curr.execute("SELECT * FROM students WHERE id=?", (rcrd,))
-    found = curr.fetchone()
-
-    if found:
-        details = "🔑 ID:   {}\n\n🪪 Name:      {}\n\n♂ Gender:      {}\n\n📅 Year:      {}\n\n📚 Course:      {}".format(*found)
-        labellist.configure(text=details, justify= LEFT)
-    else:
-        labellist.configure(text="Student not Found")
-
-    curr.close()
-    conn.close()
-
-
-srcentry = Entry(srcframe, width=45, borderwidth=2, font=("arial", 12), fg="black")
-search = CTkButton(srcframe, text="🔍 Search", text_color="black", fg_color="orange",hover_color= "skyblue", bg_color="#03254c", width=100, height=40, font=("cascadia",20), corner_radius=100, command= srcrecords)
-labellist = CTkLabel(srcframe, width=630, font=("helvetica", 20, "bold"),height=250, fg_color="white", corner_radius=20, bg_color="#03254c", text= "")
-
-srcentry.place(x=40, y=30)
-search.place(x=500,y=20)
-labellist.place(x=10, y=100)
-
-
+student_detail = Label(frame,width=20, text="Student Details",font=("lucida",20,"bold"),fg="black",bg="skyblue")
+student_detail.place(x=35,y=40)
+course_detail = Label(frame,width=20, text="Course Details",font=("lucida",20,"bold"),fg="black",bg="skyblue")
+course_detail.place(x=750,y=40)
 
 
 def prevframe():
     next_frame.place_forget()
     prev.place_forget()
     frame.place(x=0, y=100)
-    next.place(x=1250,y=820)
+    next.place(x=1250,y=20)
 
 
 def nextframe():
     frame.place_forget()
     next.place_forget()
     next_frame.place(x=0, y=100)
-    prev.place(x=1250,y=820)
+    prev.place(x=1250,y=20)
+
+
+#student treeview
 
     tree = ttk.Treeview(next_frame,height=18, columns=("ID", "Name", "Gender", "Year", "Course"), show="headings")
     tree.heading("ID", text="ID", command=lambda: sort_column(tree, "ID", False))
@@ -84,11 +60,11 @@ def nextframe():
     tree.heading("Year", text="Year", command=lambda: sort_column(tree, "Year", False))
     tree.heading("Course", text="Course", command=lambda: sort_column(tree, "Course", False))
 
-    tree.column("ID", width=210, stretch=True)
-    tree.column("Name", width=500, stretch=True)
-    tree.column("Gender", width=210, stretch=True)
-    tree.column("Year", width=210, stretch=True)
-    tree.column("Course", width=210, stretch=True)
+    tree.column("ID", width=142, stretch=True)
+    tree.column("Name", width=300, stretch=True)
+    tree.column("Gender", width=142, stretch=True)
+    tree.column("Year", width=142, stretch=True)
+    tree.column("Course", width=142, stretch=True)
 
     font = tkfont.Font(size=14)
     tree.tag_configure("custom_font", font=font)
@@ -103,11 +79,11 @@ def nextframe():
         tree.heading(column, command=lambda: sort_column(tree, column, not reverse))
 
     def reset_column_widths():
-        tree.column("ID", width=210)
-        tree.column("Name", width=500)
-        tree.column("Gender", width=210)
-        tree.column("Year", width=210)
-        tree.column("Course", width=210)
+        tree.column("ID", width=142)
+        tree.column("Name", width=300)
+        tree.column("Gender", width=142)
+        tree.column("Year", width=142)
+        tree.column("Course", width=142)
 
     tree.bind("<ButtonPress-1>", lambda event: reset_column_widths())
 
@@ -148,26 +124,130 @@ def nextframe():
         select = tree.focus()
         if select:
             delete['state'] = 'normal'
+            edit1['state'] = 'normal'
         else:
             delete['state'] = 'disabled'
+            edit1['state'] = 'disabled'
+
+
+    def editing():
+        edit_frame2.place_forget()
+        edit_frame.place(x=900,y=300)
+        def update_course(event=None):
+
+            course_opt['values'] = []
+            conn = sqlite3.connect('data.db')       
+            cur = conn.cursor()
+            cur.execute("SELECT code FROM course")
+            rows = cur.fetchall()
+
+
+            course_opt['values'] = [row[0] for row in rows]
+
+            conn.close()
+
+
+        name_txt = StringVar()
+        entryname = Entry(edit_frame, width=40, borderwidth=2, font=("arial", 13), fg="black", textvariable=name_txt)
+        hold_name = "First name   Middle Initial.   Surname"
+        name_txt.set(hold_name)
+        def name_click(event):
+            if name_txt.get() == hold_name:
+                entryname.delete(0, "end")
+                entryname.config(fg="black")
+        def name_unclick(event):
+            if not name_txt.get():
+                name_txt.set(hold_name)
+                entryname.config(fg="gray")
+        entryname.bind("<FocusIn>", name_click)
+        entryname.bind("<FocusOut>", name_unclick)
+
+        id_txt = StringVar()
+        entryid = Entry(edit_frame, width=35, borderwidth=2, font=("arial", 13), fg="black", textvariable=id_txt)
+        hold_id = "ex. 2021-xxxx"
+        id_txt.set(hold_id)
+        def id_click(event):
+            if id_txt.get() == hold_id:
+                entryid.delete(0, "end")
+                entryid.config(fg="black")
+        def id_unclick(event):
+            if not id_txt.get():
+                id_txt.set(hold_id)
+                entryid.config(fg="gray")
+        entryid.bind("<FocusIn>", id_click)
+        entryid.bind("<FocusOut>", id_unclick)
+
+        gender = ["Male", "Female", "Other"]
+        gender_opt = ttk.Combobox(edit_frame, values=gender, width=20, state="readonly", font=("arial",12))
+
+        year= ["1st year", "2nd year", "3rd year", "4th year", "other"]
+        year_opt = ttk.Combobox(edit_frame, values=year, width=20, state="readonly", font=("arial",12))
+        course_opt = ttk.Combobox(edit_frame, width=20, state="readonly", font=("arial",12))
+        update_course()
+        edit_frame.bind("<Button-1>", update_course)
+
+        entryname.place(x=20, y=30)
+        entryid.place(x=20, y=80)
+        gender_opt.place(x=20,y=130)
+        year_opt.place(x=20,y=180)
+        course_opt.place(x=20, y=230)
+
+        selected_item = tree.selection()
+        if selected_item:
+            values = tree.item(selected_item)['values']
+            entryid.delete(0, END)
+            entryid.insert(0, values[0])
+            entryname.delete(0, END)
+            entryname.insert(0, values[1])
+            gender_opt.set(values[2])
+            year_opt.set(values[3])
+            course_opt.set(values[4])
+            orig_id = values[0]
+
+        def conf_edit():
+            conn = sqlite3.connect('data.db')
+            cur = conn.cursor()
+
+            name = entryname.get()
+            id = entryid.get()
+            gender = gender_opt.get()
+            year = year_opt.get()
+            code = course_opt.get()
+            
+            cur.execute("UPDATE students SET name=?, id=?, gender=?, year=?, code=? WHERE id=?", (name,id, gender, year, code, orig_id))
+            messagebox.showinfo("Success", "Student data inserted successfully!")
+
+            conn.commit()
+            conn.close()
+
+
+            entryname.delete(0,END)
+            entryid.delete(0,END)
+        edit = CTkButton(edit_frame, height=35,width=130,corner_radius=10, fg_color="orange",bg_color="#03254c",text="Edit",text_color="black",font=("lucida",18,"bold"),command= conf_edit)
+        edit.place(x=360,y=180)
 
     tree.bind('<<TreeviewSelect>>', on_select)
-
+    
     delete = Button(next_frame, text="DELETE", width=10, font=("arial",10, "bold"),bg="#fb6767", state="disabled", command= delete_selected1)
     update = Button(next_frame, text="UPDATE", command=populate_treeview1, width=10, font=("arial",10, "bold"),bg="lightgreen")
- 
-    delete.place(x=1200, y=5)
-    update.place(x=1300, y=5)
-    tree.place(x=48,y=33)
+    student_label = Label(next_frame,width=20, text="Students Enrolled",font=("lucida",20,"bold"),fg="black",bg="skyblue")
+    edit1 = Button(next_frame, text="EDIT", width=10, font=("arial",10, "bold"),bg="orange", state="disabled",command=editing)
+    student_label.place(x=21, y=10)
+    delete.place(x=700, y=22)
+    update.place(x=800, y=22)
+    edit1.place(x=600, y=22)
+    tree.place(x=20,y=50)
 
 
 
-    tree2 = ttk.Treeview(next_frame,height=20, columns=("Code","Course"), show="headings")
+#course treeview
+
+    tree2 = ttk.Treeview(next_frame,height=15, columns=("Code","Course"), show="headings")
     tree2.heading("Code", text="Course code", command=lambda: sort_column(tree2, "Code", False))
     tree2.heading("Course", text="Course", command=lambda: sort_column(tree2, "Course", False))
 
     tree2.column("Code", width=200, stretch=True)
-    tree2.column("Course", width=720, stretch=True)
+    tree2.column("Course", width=670, stretch=True)
 
     font = tkfont.Font(size=14)
     tree2.tag_configure("custom_font", font=font)
@@ -183,7 +263,7 @@ def nextframe():
 
     def reset_column_widths2():
         tree2.column("Code", width=200)
-        tree2.column("Course", width=720)
+        tree2.column("Course", width=670)
 
     tree2.bind("<ButtonPress-1>", lambda event: reset_column_widths2())
 
@@ -240,17 +320,127 @@ def nextframe():
         select = tree2.focus()
         if select:
             delete2['state'] = 'normal'
+            edit2['state'] = 'normal'
         else:
             delete2['state'] = 'disabled'
+            edit2['state'] = 'disabled'
+    
+    def editing2():
+        edit_frame.place_forget()
+        edit_frame2.place(x=900,y=300)
+
+        code_txt = StringVar()
+        entrycode = Entry(edit_frame2, width=35, borderwidth=2, font=("arial", 12), fg="black", textvariable= code_txt)
+        hold_code = "ex. BSCS"
+        code_txt.set(hold_code)
+        def code_click(event):
+            if code_txt.get() == hold_code:
+                entrycode.delete(0, "end")
+                entrycode.config(fg="black")
+        def code_unclick(event):
+            if not code_txt.get():
+                code_txt.set(hold_code)
+                entrycode.config(fg="gray")
+        entrycode.bind("<FocusIn>", code_click)
+        entrycode.bind("<FocusOut>", code_unclick)
+
+
+        course_txt = StringVar()
+        entrycourse = Entry(edit_frame2, width=45, borderwidth=2, font=("arial", 12), fg="black", textvariable= course_txt)
+        hold_course = "ex. BS in Computer Science"
+        course_txt.set(hold_course)
+
+        def course_click(event):
+            if course_txt.get() == hold_course:
+                entrycourse.delete(0, "end")
+                entrycourse.config(fg="black")
+        def course_unclick(event):
+            if not course_txt.get():
+                course_txt.set(hold_course)
+                entrycourse.config(fg="gray")
+        entrycourse.bind("<FocusIn>", course_click)
+        entrycourse.bind("<FocusOut>", course_unclick)
+
+
+        entrycourse.place(x=30, y=50)
+        entrycode.place(x=30, y=120)
+
+        selected_item = tree2.selection()
+        if selected_item:
+            values = tree2.item(selected_item)['values']
+            entrycode.delete(0, END)
+            entrycode.insert(0, values[0])
+            entrycourse.delete(0, END)
+            entrycourse.insert(0, values[1])
+            orig = values[0]
+
+        def conf_edit2():
+            conn = sqlite3.connect('data.db')
+            cur = conn.cursor()
+            code = entrycode.get()
+            course = entrycourse.get()
+
+            cur.execute("UPDATE course SET code=?, course=? WHERE code=?", (code,course, orig))
+            messagebox.showinfo("Success", "Course data inserted successfully!")
+
+
+            conn.commit()
+            conn.close()
+            entrycode.delete(0,END)
+            entrycourse.delete(0,END)
+
+
+        edit2 = CTkButton(edit_frame2, height=35,width=130,corner_radius=10, fg_color="orange",bg_color="#03254c",text="Edit",text_color="black",font=("lucida",18,"bold"),command= conf_edit2)
+        edit2.place(x=360,y=180)
+        
 
     tree2.bind('<<TreeviewSelect>>', on_select2)
 
     delete2 = Button(next_frame, text="DELETE", width=10, font=("arial",10, "bold"),bg="#fb6767", state="disabled",command=delete_selected2)
     update2 = Button(next_frame, text="UPDATE", command=populate_tree2view2, width=10, font=("arial",10, "bold"),bg="lightgreen")
+    edit2 = Button(next_frame, text="EDIT", width=10, font=("arial",10, "bold"),bg="orange", state="disabled", command=editing2)
 
-    delete2.place(x=780, y=432)
-    update2.place(x=880, y=432)
-    tree2.place(x=48,y=460)
+    course_label = Label(next_frame,width=20, text="Courses Available",font=("lucida",20,"bold"),fg="black",bg="skyblue")
+    course_label.place(x=21,y=510)
+    delete2.place(x=702, y=521)
+    update2.place(x=802, y=521)
+    edit2.place(x=602, y=521)
+    tree2.place(x=20,y=550)
+
+
+    #searching
+
+    src_frame = CTkFrame(next_frame, width=525,height=150,fg_color="#03254c", bg_color="#177e81", corner_radius=20)
+    src_frame.place(x=900,y=100)
+
+    def find():
+            
+        search_query = src_entry.get().lower()
+
+        # Filter and update the student treeview
+        for i in tree.get_children():
+            student_values = tree.item(i)["values"]
+            if search_query not in [str(value).lower() for value in student_values]:
+                tree.detach(i)
+
+        # Filter and update the course treeview
+        for i in tree2.get_children():
+            course_values = tree2.item(i)["values"]
+            if search_query not in [str(value).lower() for value in course_values]:
+                tree2.detach(i)
+        src_entry.delete(0, END)
+
+    src_entry = Entry(src_frame, width=38,font=("lucida",13,"bold"))
+    src_button = CTkButton(src_frame, height=35,width=130,corner_radius=10, fg_color="orange",bg_color="#03254c",text="🔍 Search",text_color="black",font=("lucida",18,"bold"),command=find)
+    src_entry.place(x=15,y=50)
+    src_button.place(x=380,y=48)
+
+    #editing
+    edit_frame = CTkFrame(next_frame, width=525,height=270,fg_color="#03254c", bg_color="#177e81", corner_radius=20)
+    edit_frame.place(x=900,y=300)
+    edit_frame2 = CTkFrame(next_frame, width=525,height=270,fg_color="#03254c", bg_color="#177e81", corner_radius=20)
+        
+
 
 
 #student info 
@@ -358,15 +548,15 @@ frame1.bind("<Button-1>", update_course)
 
 
 NAME.place(x=30, y=30)
-ID.place(x=30, y=70)
-GENDER.place(x=30, y=110)
-YEAR.place(x=30, y=150)
-COURSE.place(x=30, y= 190)
+ID.place(x=30, y=100)
+GENDER.place(x=30, y=170)
+YEAR.place(x=30, y=240)
+COURSE.place(x=30, y= 310)
 entryname.place(x=180, y=30)
-entryid.place(x=180, y=70)
-gender_opt.place(x=180,y=110)
-year_opt.place(x=180,y=150)
-course_opt.place(x=180, y=190)
+entryid.place(x=180, y=100)
+gender_opt.place(x=180,y=170)
+year_opt.place(x=180,y=240)
+course_opt.place(x=180, y=310)
 
 
 #course info
@@ -437,9 +627,9 @@ def course_unclick(event):
 entrycourse.bind("<FocusIn>", course_click)
 entrycourse.bind("<FocusOut>", course_unclick)
 
-COURSE.place(x=30, y=150)
+COURSE.place(x=30, y=30)
 CODE.place(x=30, y=100)
-entrycourse.place(x=180, y=150)
+entrycourse.place(x=180, y=30)
 entrycode.place(x=180, y=100)
 
 
@@ -448,16 +638,16 @@ entrycode.place(x=180, y=100)
 addstudent = CTkButton(frame1, text="ADD STUDENT", text_color="black", fg_color="orange",hover_color= "skyblue", bg_color="#03254c", width=200, height=50, font=("cascadia",20), corner_radius=100, command= lambda: confirm())
 addcourse = CTkButton(frame2, text="ADD COURSE", text_color="black", fg_color="orange",hover_color= "skyblue", bg_color="#03254c", width=200, height=50, font=("cascadia",20), corner_radius=100,command= lambda: confirm_code())
 
-addstudent.place(x=30,y=250)
+addstudent.place(x=30,y=400)
 addcourse.place(x=30,y=250)
 
 
 
 
-prev = CTkButton(next_frame, text="Ξ Main Menu", text_color="black",height=40, font=("arial",15,"bold"), fg_color="orange", command= lambda: prevframe())
-prev.place(x=1250,y=820)
-next = CTkButton(frame, text="Ξ Browse List", text_color="black",height=40, font=("arial",15,"bold"), fg_color="orange", command= lambda: nextframe())
-next.place(x=1250,y=820)
+prev = CTkButton(next_frame,width=170, text="Ξ Main Menu", text_color="black",height=50, font=("arial",15,"bold"), fg_color="orange", command= lambda: prevframe())
+prev.place(x=1250,y=20)
+next = CTkButton(frame,width=170, text="Ξ Browse List", text_color="black",height=50, font=("arial",15,"bold"), fg_color="orange", command= lambda: nextframe())
+next.place(x=1250,y=20)
 
 
 conn.commit()
